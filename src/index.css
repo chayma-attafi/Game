@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    --background: 0 0% 97%;
+    --foreground: 220 20% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 12%;
+
+    --primary: 174 62% 40%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 14% 92%;
+    --secondary-foreground: 220 20% 12%;
+
+    --muted: 220 14% 94%;
+    --muted-foreground: 215 12% 45%;
+
+    --accent: 174 62% 40%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 14% 86%;
+    --input: 220 14% 86%;
+    --ring: 174 62% 40%;
+
+    --radius: 0.5rem;
+
+    /* Battle theme tokens */
+    --blue-team: 199 89% 40%;
+    --blue-team-foreground: 0 0% 100%;
+    --blue-team-glow: 199 89% 48%;
+
+    --red-team: 0 84% 50%;
+    --red-team-foreground: 0 0% 100%;
+    --red-team-glow: 0 84% 55%;
+
+    --battle-surface: 220 14% 96%;
+    --battle-border: 220 14% 86%;
+    --battle-glow-blue: 199 89% 48% / 0.1;
+    --battle-glow-red: 0 84% 55% / 0.1;
+
+    --neon-blue: 199 100% 40%;
+    --neon-red: 0 100% 50%;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: 'Orbitron', monospace;
+  }
+
+  .font-body {
+    font-family: 'Rajdhani', 'Inter', sans-serif;
+  }
+
+  .font-score {
+    font-family: 'Orbitron', monospace;
+  }
+
+  .text-glow-blue {
+    text-shadow: 0 0 8px hsl(var(--neon-blue) / 0.4), 0 0 20px hsl(var(--neon-blue) / 0.15);
+  }
+
+  .text-glow-red {
+    text-shadow: 0 0 8px hsl(var(--neon-red) / 0.4), 0 0 20px hsl(var(--neon-red) / 0.15);
+  }
+
+  .text-glow-primary {
+    text-shadow: 0 0 10px hsl(var(--primary) / 0.6), 0 0 30px hsl(var(--primary) / 0.3);
+  }
+
+  .box-glow-blue {
+    box-shadow: 0 0 15px hsl(var(--neon-blue) / 0.2), 0 0 40px hsl(var(--neon-blue) / 0.1), inset 0 1px 0 hsl(var(--neon-blue) / 0.1);
+  }
+
+  .box-glow-red {
+    box-shadow: 0 0 15px hsl(var(--neon-red) / 0.2), 0 0 40px hsl(var(--neon-red) / 0.1), inset 0 1px 0 hsl(var(--neon-red) / 0.1);
+  }
+
+  .battle-card {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--battle-border));
+    box-shadow: 0 2px 12px hsl(0 0% 0% / 0.06), 0 1px 3px hsl(0 0% 0% / 0.04);
+  }
+
+  .battle-gradient {
+    background: linear-gradient(135deg, hsl(var(--blue-team) / 0.15), transparent 50%, hsl(var(--red-team) / 0.15));
+  }
+}

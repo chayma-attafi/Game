@@ -1,0 +1,3 @@
+matchId,submissionId,submittedAt,submitterEmail,submitterName,blueTeam,projectDescription,agentsUsed,securityApproach,vulnerabilityTitle,severity,startTime,endTime,durationMinutes,statusExpert,expertComment,verifiedBy,verifiedAt,severityWeight,timeWeight,scorePoints
+H1-R1,BLUE-001,2026-02-19T10:00:00Z,blue1@example.com,Blue Player 1,Blue Team 1,Project details,Agent list,Security approach,SQL Injection,High,2026-02-19T10:00:00Z,2026-02-19T10:45:00Z,=IF(AND(L2<>"",M2<>""),(M2-L2)*1440,""),PENDING,,,,=IFS(K2="Critical",10,K2="High",7,K2="Medium",4,K2="Low",2,TRUE,0),=IF(N2="",0,MAX(0,5-ROUNDUP(N2/15,0))),=IF(O2="ACCEPTED",S2+T2,0)
+

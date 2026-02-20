@@ -1,0 +1,3 @@
+matchId,submissionId,submittedAt,submitterEmail,submitterName,redTeam,targetBlueTeam,vulnerabilityTitle,description,endpointUrl,severity,pocUrl,exploitation,startTime,endTime,durationMinutes,statusExpert,expertComment,verifiedBy,verifiedAt,severityWeight,exploitWeight,timeWeight,scorePoints
+H1-R1,RED-001,2026-02-19T11:00:00Z,red1@example.com,Red Player 1,Hackers Team 1,Blue Team 1,Broken Access Control,Details here,https://target.local/api/users,High,https://poc.local/video,Privilege escalation,2026-02-19T11:00:00Z,2026-02-19T11:20:00Z,=IF(AND(N2<>"",O2<>""),(O2-N2)*1440,""),PENDING,,,,=IFS(K2="Critical",10,K2="High",7,K2="Medium",4,K2="Low",2,TRUE,0),=IF(M2<>"",3,0),=IF(P2="",0,MAX(0,5-ROUNDUP(P2/15,0))),=IF(Q2="ACCEPTED",U2+V2+W2,0)
+
