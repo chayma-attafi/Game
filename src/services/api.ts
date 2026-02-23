@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
+﻿const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
 export interface MatchData {
   matchId: number;
@@ -37,6 +37,8 @@ export interface KpiSummary {
   totalBlueNonAttained: number;
   totalRedFound: number;
   totalNewFindings: number;
+  maxNewFindingsByTeam: number;
+  newFindingsTopTeam: string;
   avgCoveragePct: number;
   leadingRedTeam: string;
   leadingRedAccepted: number;
@@ -51,6 +53,15 @@ export interface RedLeaderboardItem {
   rejected: number;
   pending: number;
   targetsCovered: number;
+  yesCount: number;
+  highCount: number;
+  mediumCount: number;
+  lowCount: number;
+  highAcceptedCount: number;
+  mediumAcceptedCount: number;
+  lowAcceptedCount: number;
+  newAcceptedCount: number;
+  finalScore: number;
 }
 
 export interface BlueRiskItem {
@@ -158,3 +169,10 @@ export function getWinner(match: MatchData): "blue" | "red" | "tie" {
   if (match.redScore > match.blueScore) return "red";
   return "tie";
 }
+
+
+
+
+
+
+
