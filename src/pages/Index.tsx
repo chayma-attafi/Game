@@ -1,14 +1,16 @@
-import { motion } from "framer-motion";
+﻿import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useState, useCallback } from "react";
 import BattleIntro from "@/components/BattleIntro";
 import talanLogo from "@/assets/talan-logo.jpg";
+import { playStartBattleAudio } from "@/lib/sfx";
 
 const Index = () => {
   const navigate = useNavigate();
   const [showIntro, setShowIntro] = useState(false);
 
-  const handleStart = () => {
+  const handleStart = async () => {
+    await playStartBattleAudio();
     setShowIntro(true);
   };
 
@@ -20,7 +22,6 @@ const Index = () => {
     <div className="relative flex min-h-screen items-center justify-center bg-background overflow-hidden">
       {showIntro && <BattleIntro onComplete={handleIntroComplete} />}
 
-      {/* Background grid pattern */}
       <div
         className="absolute inset-0 opacity-[0.03]"
         style={{
@@ -29,7 +30,6 @@ const Index = () => {
         }}
       />
 
-      {/* Radial glow */}
       <div
         className="absolute inset-0"
         style={{
@@ -43,20 +43,15 @@ const Index = () => {
         transition={{ duration: 0.8 }}
         className="relative z-10 text-center px-6"
       >
-        {/* Talan Logo */}
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.1, duration: 0.5 }}
           className="mb-8"
         >
-          {/* <img src={talanLogo} alt="Talan Tunisie" className="h-16 md:h-20 mx-auto" /> */}
           <img src={talanLogo} alt="Talan Tunisie" className="h-24 md:h-32 mx-auto" />
-          
-
         </motion.div>
 
-        {/* Title */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -88,7 +83,6 @@ const Index = () => {
           Developers defend. Hackers attack. Only one team prevails.
         </motion.p>
 
-        {/* Start button */}
         <motion.button
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -102,27 +96,20 @@ const Index = () => {
             boxShadow: "0 0 20px hsl(var(--primary) / 0.2), 0 0 40px hsl(var(--primary) / 0.08)",
           }}
         >
-          ⚔️ Start Battle
+          Start Battle
         </motion.button>
 
-        {/* Decorative team icons */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1, duration: 0.6 }}
-          className="mt-16 flex items-center justify-center gap-16 text-4xl md:text-5xl"
+          className="mt-16 flex items-center justify-center gap-8 text-sm md:text-base uppercase tracking-wider text-muted-foreground"
         >
-          <motion.span
-            animate={{ y: [0, -8, 0] }}
-            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-          >
-            🛡️
+          <motion.span animate={{ y: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}>
+            Blue Defense
           </motion.span>
-          <motion.span
-            animate={{ y: [0, -8, 0] }}
-            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut", delay: 1 }}
-          >
-            💀
+          <motion.span animate={{ y: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 2, ease: "easeInOut", delay: 1 }}>
+            Red Attack
           </motion.span>
         </motion.div>
       </motion.div>
@@ -131,3 +118,4 @@ const Index = () => {
 };
 
 export default Index;
+

@@ -14,6 +14,7 @@ import {
 import talanLogo from "@/assets/talan-logo.jpg";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
+import { playClickSfx } from "@/lib/sfx";
 
 const POLL_INTERVAL = 5000;
 
@@ -124,7 +125,7 @@ const Dashboard = () => {
       <header className="border-b border-border px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button onClick={() => navigate("/")} className="hover:opacity-80 transition-opacity">
+            <button onClick={() => { playClickSfx(); navigate("/"); }} className="hover:opacity-80 transition-opacity">
               <img src={talanLogo} alt="Talan Tunisie" className="h-8" />
             </button>
             <div className="h-4 w-px bg-border" />
@@ -296,6 +297,7 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
 
 
 
