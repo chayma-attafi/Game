@@ -51,10 +51,13 @@ function parseGoogleVisualizationJson(raw) {
   return JSON.parse(jsonText);
 }
 
-function getColumnIndexByAlias(headers, aliases) {
+function getColumnIndexByAlias(headers, aliases, options = {}) {
+  const excludes = Array.isArray(options.exclude) ? options.exclude : [];
   for (let i = 0; i < headers.length; i += 1) {
     const current = headers[i];
-    if (aliases.some((alias) => current.includes(alias))) {
+    const hasAlias = aliases.some((alias) => current.includes(alias));
+    const hasExcluded = excludes.some((ex) => current.includes(ex));
+    if (hasAlias && !hasExcluded) {
       return i;
     }
   }
@@ -79,8 +82,37 @@ function normalizeSeverity(value) {
 function normalizeStatus(value) {
   const raw = String(value || "").trim().toUpperCase();
   if (raw.startsWith("ACCEPT") || raw.startsWith("APPROV")) return "accepted";
+  if (raw.startsWith("JAUNE") || raw.startsWith("YELLOW")) return "jaune";
   if (raw.startsWith("REJECT") || raw.startsWith("REJET") || raw.startsWith("REFUS")) return "rejected";
   return "pending";
+}
+
+function severityPoints(severity) {
+  if (severity === "high") return 7;
+  if (severity === "medium") return 4;
+  if (severity === "low") return 2;
+  return 0;
+}
+
+function statusFactor(status) {
+  if (status === "accepted") return 1;
+  if (status === "jaune") return 0.6;
+  return 0;
+}
+
+function isFirstFinderValue(firstFinderRaw, redTeamNumber) {
+  const yn = normalizeYesNo(firstFinderRaw);
+  if (yn === "yes") return true;
+  const finderTeam = extractTeamNumber(firstFinderRaw);
+  if (finderTeam && redTeamNumber) return finderTeam === redTeamNumber;
+  return false;
+}
+
+function parseRoundNumber(value) {
+  const raw = String(value || "").toLowerCase();
+  if (raw.includes("1") || raw.includes("matin")) return 1;
+  if (raw.includes("2") || raw.includes("apres") || raw.includes("apres-midi") || raw.includes("apres midi")) return 2;
+  return null;
 }
 
 async function readSheetRows(sheetId, gid, range) {
@@ -108,6 +140,8 @@ function aggregateRedSheet(headers, rows) {
   const blueCol = getColumnIndexByAlias(headers, ["equipes cibles", "blue team", "target blue"]);
   const statusCol = getColumnIndexByAlias(headers, ["status", "statut", "validation"]);
   const newVulnCol = getColumnIndexByAlias(headers, ["new vulnarabilite", "new vulnerabilite", "new vulnerability", "nouvelle vulnerabilite"]);
+  const firstFinderCol = getColumnIndexByAlias(headers, ["first_finder", "first finder", "premier finder", "first found", "firstfound"]);
+  const roundCol = getColumnIndexByAlias(headers, ["round", "manche"]);
   let severityCol = getColumnIndexByAlias(headers, ["criticite", "severity", "criticality"]);
   if (severityCol === -1 && rows.some((r) => Array.isArray(r) && r.length > 21)) severityCol = 21;
 
@@ -121,6 +155,7 @@ function aggregateRedSheet(headers, rows) {
     accepted: 0,
     rejected: 0,
     pending: 0,
+    jaune: 0,
     targetsCovered: 0,
     yesCount: 0,
     highCount: 0,
@@ -130,6 +165,13 @@ function aggregateRedSheet(headers, rows) {
     mediumAcceptedCount: 0,
     lowAcceptedCount: 0,
     newAcceptedCount: 0,
+    highSeverityScore: 0,
+    mediumSeverityScore: 0,
+    lowSeverityScore: 0,
+    firstFinderBonusScore: 0,
+    scoreRound1: 0,
+    scoreRound2: 0,
+    jaune: 0,
     finalScore: 0,
     _targets: new Set(),
   }));
@@ -141,6 +183,7 @@ function aggregateRedSheet(headers, rows) {
     accepted: 0,
     rejected: 0,
     pending: 0,
+    jaune: 0,
   }));
 
   let totalNewFindingsYes = 0;
@@ -160,6 +203,14 @@ function aggregateRedSheet(headers, rows) {
     const status = statusCol >= 0 ? normalizeStatus(row[statusCol]) : "accepted";
     const newVuln = newVulnCol >= 0 ? normalizeYesNo(row[newVulnCol]) : "unknown";
     const severity = severityCol >= 0 ? normalizeSeverity(row[severityCol]) : "unknown";
+    const roundNumber = roundCol >= 0 ? parseRoundNumber(row[roundCol]) : null;
+    const isFirstFinder = firstFinderCol >= 0 ? isFirstFinderValue(row[firstFinderCol], redTeamNumber) : false;
+
+    const sevPts = severityPoints(severity);
+    const factor = statusFactor(status);
+    const severityScore = sevPts * factor;
+    const firstFinderBonus = isFirstFinder ? (status === "accepted" ? 3 : status === "jaune" ? 2 : 0) : 0;
+    const lineScore = severityScore + firstFinderBonus;
 
     const redRef = redLeaderboard[redTeamNumber - 1];
     const blueRef = blueRisk[blueTeamNumber - 1];
@@ -187,6 +238,9 @@ function aggregateRedSheet(headers, rows) {
       if (severity === "medium") redRef.mediumAcceptedCount += 1;
       if (severity === "low") redRef.lowAcceptedCount += 1;
       if (newVuln === "yes") redRef.newAcceptedCount += 1;
+    } else if (status === "jaune") {
+      redRef.jaune += 1;
+      blueRef.jaune += 1;
     } else if (status === "rejected") {
       redRef.rejected += 1;
       blueRef.rejected += 1;
@@ -194,11 +248,20 @@ function aggregateRedSheet(headers, rows) {
       redRef.pending += 1;
       blueRef.pending += 1;
     }
+
+    if (severity === "high") redRef.highSeverityScore += severityScore;
+    if (severity === "medium") redRef.mediumSeverityScore += severityScore;
+    if (severity === "low") redRef.lowSeverityScore += severityScore;
+    redRef.firstFinderBonusScore += firstFinderBonus;
+    if (roundNumber === 1) redRef.scoreRound1 += lineScore;
+    if (roundNumber === 2) redRef.scoreRound2 += lineScore;
   });
 
   redLeaderboard.forEach((row) => {
     row.targetsCovered = row._targets.size;
-    row.finalScore = (row.highAcceptedCount * 7) + (row.mediumAcceptedCount * 4) + (row.lowAcceptedCount * 2) + (row.newAcceptedCount * 2);
+    row.scoreRound1 = Number((row.scoreRound1 || 0).toFixed(1));
+    row.scoreRound2 = Number((row.scoreRound2 || 0).toFixed(1));
+    row.finalScore = Number((row.scoreRound1 + row.scoreRound2).toFixed(1));
     delete row._targets;
   });
 
@@ -207,8 +270,10 @@ function aggregateRedSheet(headers, rows) {
 
 function aggregateBlueSheet(headers, rows) {
   const blueCol = getColumnIndexByAlias(headers, ["votre equipe", "blue team", "equipe"]);
-  const attainedCol = getColumnIndexByAlias(headers, ["nombre de vulnerabilites atteintes", "vulnerabilites atteintes", "atteintes"]);
-  const nonAttainedCol = getColumnIndexByAlias(headers, ["nombre de vulnerabilites non atteintes", "vulnerabilites non atteintes", "non atteintes"]);
+  let attainedCol = getColumnIndexByAlias(headers, ["nombre de vulnerabilites atteintes"], { exclude: ["description", "non atteintes"] });
+  if (attainedCol === -1) attainedCol = getColumnIndexByAlias(headers, ["vulnerabilites atteintes", "atteintes"], { exclude: ["description", "non atteintes"] });
+  let nonAttainedCol = getColumnIndexByAlias(headers, ["nombre de vulnerabilites non atteintes"], { exclude: ["description"] });
+  if (nonAttainedCol === -1) nonAttainedCol = getColumnIndexByAlias(headers, ["vulnerabilites non atteintes", "non atteintes"], { exclude: ["description"] });
   const projectDemoCol = getColumnIndexByAlias(headers, ["projectdemo", "description du projet", "projet"]);
 
   const blueMeta = new Map();
@@ -226,8 +291,18 @@ function aggregateBlueSheet(headers, rows) {
     };
 
     current.submissions += 1;
-    if (attainedCol >= 0) current.blueAttained += parseNumericValue(row[attainedCol]);
-    if (nonAttainedCol >= 0) current.blueNonAttained += parseNumericValue(row[nonAttainedCol]);
+    if (attainedCol >= 0) {
+      const rawAttained = row[attainedCol];
+      if (rawAttained !== null && rawAttained !== undefined && String(rawAttained).trim() !== "") {
+        current.blueAttained = parseNumericValue(rawAttained);
+      }
+    }
+    if (nonAttainedCol >= 0) {
+      const rawNonAttained = row[nonAttainedCol];
+      if (rawNonAttained !== null && rawNonAttained !== undefined && String(rawNonAttained).trim() !== "") {
+        current.blueNonAttained = parseNumericValue(rawNonAttained);
+      }
+    }
 
     if (projectDemoCol >= 0) {
       const raw = String(row[projectDemoCol] || "").trim();
@@ -344,6 +419,7 @@ async function buildDashboardSummary() {
     return {
       ...row,
       redFound,
+      jaune: Number(row.jaune || 0),
       blueAttained,
       blueNonAttained: meta.blueNonAttained,
       coveragePct: Number(coveragePct.toFixed(1)),
@@ -434,6 +510,24 @@ app.listen(PORT, () => {
   // eslint-disable-next-line no-console
   console.log(`Backend listening on http://localhost:${PORT}`);
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

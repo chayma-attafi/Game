@@ -14,7 +14,7 @@ import {
 import talanLogo from "@/assets/talan-logo.jpg";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
-import { playClickSfx } from "@/lib/sfx";
+import { playClickSfx, playRedFoundSfx } from "@/lib/sfx";
 
 const POLL_INTERVAL = 5000;
 
@@ -48,6 +48,7 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   const intervalRef = useRef<ReturnType<typeof setInterval>>();
+  const prevTotalRedFoundRef = useRef<number | null>(null);
 
   const maxMatrixValue = useMemo(() => {
     let max = 0;
@@ -66,10 +67,39 @@ const Dashboard = () => {
     },
   } satisfies ChartConfig;
 
+  const blueSheetCountsChartConfig = {
+    blueAttained: { label: "Atteintes", color: "hsl(195 85% 45%)" },
+    blueNonAttained: { label: "Non Atteintes", color: "hsl(45 95% 52%)" },
+  } satisfies ChartConfig;
+
+  const scoreBreakdownConfig = {
+    highSeverityScore: { label: "High x Factor", color: "hsl(0 90% 45%)" },
+    mediumSeverityScore: { label: "Medium x Factor", color: "hsl(20 95% 50%)" },
+    lowSeverityScore: { label: "Low x Factor", color: "hsl(40 95% 55%)" },
+    firstFinderBonusScore: { label: "First Finder Bonus", color: "hsl(340 80% 55%)" },
+  } satisfies ChartConfig;
+
+  const redScoreBreakdownData = redLeaderboard.map((r) => ({
+    team: r.team,
+    highSeverityScore: Number(r.highSeverityScore || 0),
+    mediumSeverityScore: Number(r.mediumSeverityScore || 0),
+    lowSeverityScore: Number(r.lowSeverityScore || 0),
+    firstFinderBonusScore: Number(r.firstFinderBonusScore || 0),
+    scoreRound1: Number(r.scoreRound1 || 0),
+    scoreRound2: Number(r.scoreRound2 || 0),
+    finalScore: Number(r.finalScore || 0),
+  }));
   useEffect(() => {
     const load = async () => {
       try {
         const summary = await fetchDashboardSummary();
+        const nextTotalRedFound = Number(summary?.kpis?.totalRedFound || 0);
+        const prevTotalRedFound = prevTotalRedFoundRef.current;
+        if (prevTotalRedFound !== null && nextTotalRedFound > prevTotalRedFound) {
+          void playRedFoundSfx();
+        }
+        prevTotalRedFoundRef.current = nextTotalRedFound;
+
         setKpis(summary.kpis);
         setRedLeaderboard(summary.redLeaderboard || []);
         setBlueRisk(summary.blueRisk || []);
@@ -169,23 +199,20 @@ const Dashboard = () => {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground">Top Accepted By Expert</CardTitle>
+              <CardTitle className="text-sm text-muted-foreground">Top Hackers</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-xs text-muted-foreground mb-1">{kpis.leadingRedTeam || "-"}</p>
-              <p className="text-3xl font-black text-foreground">{kpis.leadingRedAccepted || 0}</p>
+              <p className="text-xs text-muted-foreground mb-1">{topHackersLabel}</p>
+              <p className="text-3xl font-black text-red-team">{maxRedScore || 0}</p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground">{
-                kpis.newFindingsTopTeam && kpis.newFindingsTopTeam !== "-"
-                  ? `New Findings By ${kpis.newFindingsTopTeam}`
-                  : "New Findings By Red"
-              }</CardTitle>
+              <CardTitle className="text-sm text-muted-foreground">Top Blue Teams</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-black text-red-team">{kpis.maxNewFindingsByTeam || 0}</p>
+              <p className="text-xs text-muted-foreground mb-1">{blueLeaderLabel}</p>
+              <p className="text-3xl font-black text-blue-team">{maxBlueAttained || 0}</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -214,31 +241,28 @@ const Dashboard = () => {
           </Card>
 
           <div className="grid gap-6">
-            <Card className="border-red-team/30">
-              <CardHeader>
-                <CardTitle className="text-red-team">Top Hackers</CardTitle>
-                <CardDescription>{topHackersLabel}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-4xl font-black text-red-team">{maxRedScore}</p>
-                <p>{topHackersSubtitle}</p>
-              </CardContent>
-            </Card>
-
             <Card className="border-blue-team/30">
               <CardHeader>
-                <CardTitle className="text-blue-team">Top Blue Teams</CardTitle>
-                <CardDescription>{blueLeaderLabel}</CardDescription>
+                <CardTitle className="text-blue-team">Blue Teams Leaderboard</CardTitle>
+                <CardDescription>Nombre de vulnerabilites Atteintes / non Atteintes</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-4xl font-black text-blue-team">{maxBlueAttained}</p>
-                <p>{blueLeaderSubtitle}</p>
+                <ChartContainer config={blueSheetCountsChartConfig} className="h-72 w-full aspect-auto">
+                  <BarChart data={blueRisk}>
+                    <CartesianGrid vertical={false} />
+                    <XAxis dataKey="team" interval={0} angle={-25} textAnchor="end" height={70} />
+                    <YAxis allowDecimals={false} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey="blueAttained" stackId="blue" fill="var(--color-blueAttained)" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="blueNonAttained" stackId="blue" fill="var(--color-blueNonAttained)" />
+                  </BarChart>
+                </ChartContainer>
               </CardContent>
             </Card>
           </div>
         </motion.div>
 
-        <motion.div
+                <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.05 }}
@@ -284,19 +308,58 @@ const Dashboard = () => {
           </Card>
         </motion.div>
 
-        {!isLoading && (
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-display text-lg">Final Score Breakdown (Red Teams)</CardTitle>
+              <CardDescription>
+                ScoreLigne = SeverityPoints x StatusFactor + FirstFinderBonus | FinalScore = Round1 + Round2
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer config={scoreBreakdownConfig} className="h-72 w-full aspect-auto">
+                <BarChart data={redScoreBreakdownData}>
+                  <CartesianGrid vertical={false} />
+                  <XAxis dataKey="team" />
+                  <YAxis allowDecimals={false} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="highSeverityScore" stackId="score" fill="var(--color-highSeverityScore)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="mediumSeverityScore" stackId="score" fill="var(--color-mediumSeverityScore)" />
+                  <Bar dataKey="lowSeverityScore" stackId="score" fill="var(--color-lowSeverityScore)" />
+                  <Bar dataKey="firstFinderBonusScore" stackId="score" fill="var(--color-firstFinderBonusScore)" />
+                </BarChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        </motion.div>
+        {/* {!isLoading && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {matches.map((match, i) => (
               <MatchPanel key={match.matchId} match={match} index={i} />
             ))}
           </div>
-        )}
+        )} */}
       </main>
     </div>
   );
 };
 
 export default Dashboard;
+
+
+
+
+
+
+
+
+
+
+
 
 
 

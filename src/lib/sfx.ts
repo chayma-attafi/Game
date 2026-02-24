@@ -124,3 +124,14 @@ export async function playStartBattleAudio() {
     return false;
   }
 }
+
+export async function playRedFoundSfx() {
+  const ctx = await ensureRunning();
+  if (!ctx) return;
+
+  const t = ctx.currentTime + 0.01;
+  // sharp alert with short low hit
+  tone(ctx, 820, t, 0.11, 0.14, "square");
+  tone(ctx, 1100, t + 0.035, 0.09, 0.1, "triangle");
+  tone(ctx, 120, t, 0.16, 0.12, "sine");
+}

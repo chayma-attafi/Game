@@ -51,6 +51,7 @@ export interface RedLeaderboardItem {
   vulnerabilities: number;
   accepted: number;
   rejected: number;
+  jaune: number;
   pending: number;
   targetsCovered: number;
   yesCount: number;
@@ -61,6 +62,12 @@ export interface RedLeaderboardItem {
   mediumAcceptedCount: number;
   lowAcceptedCount: number;
   newAcceptedCount: number;
+  highSeverityScore: number;
+  mediumSeverityScore: number;
+  lowSeverityScore: number;
+  firstFinderBonusScore: number;
+  scoreRound1: number;
+  scoreRound2: number;
   finalScore: number;
 }
 
@@ -70,6 +77,7 @@ export interface BlueRiskItem {
   redFound: number;
   accepted: number;
   rejected: number;
+  jaune: number;
   pending: number;
   blueSubmissions: number;
   projectDemo: string;
@@ -169,6 +177,10 @@ export function getWinner(match: MatchData): "blue" | "red" | "tie" {
   if (match.redScore > match.blueScore) return "red";
   return "tie";
 }
+
+
+
+
 
 
 
